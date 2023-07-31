@@ -23,6 +23,10 @@ public class ControllableVerts : MonoBehaviour
     Vector3[] basePos;
 
 
+    public bool inbox { get; set; }
+    public Vector2 power { get; set; }
+
+
     private void Awake()
     {
         mainCamera = Camera.main;
@@ -30,6 +34,8 @@ public class ControllableVerts : MonoBehaviour
         meshFilter = GetComponent<MeshFilter>();
         Mesh mesh = meshFilter.mesh;
         basePos = mesh.vertices;
+        inbox = false;
+        power = Vector2.zero;
     }
 
     private void Update()
@@ -84,20 +90,31 @@ public class ControllableVerts : MonoBehaviour
         collider.sharedMesh = mesh;
     }
 
+    private void OnTriggerEnter(Collider other)
+    {
+        inbox = true;
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        inbox = false;
+    }
 
     IEnumerator goBack()
     {
         returning = true;
+        power = (clickPos - mousePos) * .8f;
         lerpValue = 0;
         yield return new WaitUntil(goingBack);
         lerpValue = 1;
+        power = Vector2.zero;
         clickPos = mousePos;
         returning = false;
     }
 
     bool goingBack()
     {
-        lerpValue += Time.deltaTime * .5f;
+        lerpValue += Time.deltaTime * 5f;
         return lerpValue >= 1;
     }
 
