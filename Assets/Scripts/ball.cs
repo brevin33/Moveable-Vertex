@@ -1,5 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
+using UnityEditor.UIElements;
 using UnityEngine;
 
 public class ball : MonoBehaviour
@@ -16,6 +15,7 @@ public class ball : MonoBehaviour
         GameObject other = collision.gameObject;
         if (other.tag == "movingVert")
         {
+            ControllableVerts mv = other.GetComponent<ControllableVerts>();
             Vector3 avgNormal = Vector3.zero;
             ContactPoint[] contacts = new ContactPoint[collision.contactCount];
             collision.GetContacts(contacts);
@@ -25,11 +25,8 @@ public class ball : MonoBehaviour
                 avgNormal += contact.normal;
             }
             avgNormal = avgNormal / contacts.Length;
-            ControllableVerts mv = other.GetComponent<ControllableVerts>();
-            if(mv.inbox) {
-                Debug.Log(Vector3.Dot(mv.power.normalized, avgNormal.normalized));
-                rb.AddForce( mv.power * Vector3.Dot(mv.power.normalized,avgNormal));
-            }
+            Debug.Log(Mathf.Max(Vector3.Dot(mv.power.normalized, avgNormal), 0));
+            rb.AddForce(mv.power *  Mathf.Max(Vector3.Dot(mv.power.normalized, avgNormal),0));
         }
     }
 }

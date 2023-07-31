@@ -5,6 +5,9 @@ using UnityEngine;
 public class ControllableVerts : MonoBehaviour
 {
 
+    [SerializeField]
+    float strength = .14f;
+
     Camera mainCamera;
 
     bool trackingMousePos;
@@ -13,8 +16,11 @@ public class ControllableVerts : MonoBehaviour
     bool returning = false;
 
     Vector2 mousePos;
+    Vector2 prevMovingVertPos;
+    Vector2 movingVertPos;
     Vector2 clickPos;
     bool clicked;
+    bool movedVert;
 
     MeshFilter meshFilter;
 
@@ -22,9 +28,9 @@ public class ControllableVerts : MonoBehaviour
 
     Vector3[] basePos;
 
-
-    public bool inbox { get; set; }
     public Vector2 power { get; set; }
+
+    float maxDist;
 
 
     private void Awake()
@@ -34,8 +40,8 @@ public class ControllableVerts : MonoBehaviour
         meshFilter = GetComponent<MeshFilter>();
         Mesh mesh = meshFilter.mesh;
         basePos = mesh.vertices;
-        inbox = false;
         power = Vector2.zero;
+        maxDist = .67f * transform.localScale.x;
     }
 
     private void Update()
@@ -46,6 +52,10 @@ public class ControllableVerts : MonoBehaviour
             if (trackingMousePos)
             {
                 mousePos = mainCamera.ScreenToWorldPoint(Input.mousePosition);
+                if (Vector2.Distance(mousePos,clickPos) > maxDist)
+                {
+                    mousePos = clickPos + ((mousePos - clickPos).normalized * maxDist);
+                }
             }
             if (Input.GetMouseButtonDown(0))
             {
@@ -61,7 +71,11 @@ public class ControllableVerts : MonoBehaviour
                 StartCoroutine(goBack());
             }
         }
+    }
 
+    private void FixedUpdate()
+    {
+        movedVert = false;
         Mesh mesh = meshFilter.mesh;
         Vector3[] verts = mesh.vertices;
         for (int i = 0; i < mesh.vertexCount; i++)
@@ -69,8 +83,10 @@ public class ControllableVerts : MonoBehaviour
             Vector2 vert = verts[i];
             Vector2 baseVert = basePos[i];
             Vector2 baseVertWorld = transform.TransformPoint(baseVert);
-            if (Vector2.Distance(baseVertWorld, clickPos) <= .6f)
+            if (Vector2.Distance(baseVertWorld, clickPos) <= 1f)
             {
+                movedVert = true;
+                prevMovingVertPos = vert;
                 if (clicked)
                 {
                     vert = transform.InverseTransformPoint(mousePos );
@@ -79,6 +95,7 @@ public class ControllableVerts : MonoBehaviour
                 {
                     vert = Vector2.Lerp(transform.InverseTransformPoint(mousePos), baseVert,lerpValue);
                 }
+                movingVertPos = vert;
             }
             else
             {
@@ -88,26 +105,23 @@ public class ControllableVerts : MonoBehaviour
         }
         mesh.vertices = verts;
         collider.sharedMesh = mesh;
-    }
-
-    private void OnTriggerEnter(Collider other)
-    {
-        inbox = true;
-    }
-
-    private void OnTriggerExit(Collider other)
-    {
-        inbox = false;
+        if (movedVert)
+        {
+            power = (((movingVertPos - prevMovingVertPos) * strength) / Time.fixedDeltaTime);
+        }
+        else
+        {
+            power = Vector2.zero;
+        }
     }
 
     IEnumerator goBack()
     {
         returning = true;
-        power = (clickPos - mousePos) * .8f;
+        power = ((clickPos - mousePos) * strength)*5f;
         lerpValue = 0;
         yield return new WaitUntil(goingBack);
         lerpValue = 1;
-        power = Vector2.zero;
         clickPos = mousePos;
         returning = false;
     }
