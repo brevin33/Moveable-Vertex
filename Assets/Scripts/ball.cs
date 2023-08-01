@@ -3,30 +3,42 @@ using UnityEngine;
 
 public class ball : MonoBehaviour
 {
-    Rigidbody rb;
+    Rigidbody2D rb;
+
+    float lastHitTime;
 
     private void Awake()
     {
-        rb = GetComponent<Rigidbody>();
+        rb = GetComponent<Rigidbody2D>();
     }
 
-    private void OnCollisionEnter(Collision collision)
+    private void Update()
+    {
+        lastHitTime += Time.deltaTime;
+    }
+
+    private void OnCollisionStay2D(Collision2D collision)
     {
         GameObject other = collision.gameObject;
         if (other.tag == "movingVert")
         {
-            ControllableVerts mv = other.GetComponent<ControllableVerts>();
-            Vector3 avgNormal = Vector3.zero;
-            ContactPoint[] contacts = new ContactPoint[collision.contactCount];
+            ControllableVerts mv = other.GetComponentInParent<ControllableVerts>();
+            int[] edgeIndex = other.GetComponent<MovableEdge>().index;
+            Vector2 avgNormal = Vector3.zero;
+            ContactPoint2D[] contacts = new ContactPoint2D[collision.contactCount];
             collision.GetContacts(contacts);
             for (int i = 0; i < contacts.Length; i++)
             {
-                ContactPoint contact = contacts[i];
+                ContactPoint2D contact = contacts[i];
                 avgNormal += contact.normal;
             }
             avgNormal = avgNormal / contacts.Length;
-            Debug.Log(Mathf.Max(Vector3.Dot(mv.power.normalized, avgNormal), 0));
-            rb.AddForce(mv.power *  Mathf.Max(Vector3.Dot(mv.power.normalized, avgNormal),0));
+            float distfromVert1 = Vector2.Distance( mv.getVertexPosition(edgeIndex[0]), transform.position);
+            float distfromVert2 = Vector2.Distance(mv.getVertexPosition(edgeIndex[1]), transform.position);
+            float lerpValue = distfromVert1/(distfromVert1+distfromVert2);
+            Vector2 power = Vector2.Lerp(mv.power[edgeIndex[0]], mv.power[edgeIndex[1]],lerpValue);
+            rb.AddForce(power * Mathf.Max(Vector3.Dot(power.normalized, avgNormal), 0));
+            lastHitTime = 0;
         }
     }
 }
