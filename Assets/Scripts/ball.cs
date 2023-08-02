@@ -37,7 +37,7 @@ public class ball : MonoBehaviour
             float distfromVert2 = Vector2.Distance(mv.getVertexPosition(edgeIndex[1]), contacts[0].point);
             float lerpValue = distfromVert1/(distfromVert1+distfromVert2);
             Vector2 power = Vector2.Lerp(mv.power[edgeIndex[0]], mv.power[edgeIndex[1]],lerpValue);
-            rb.AddForce(power * Mathf.Max(Vector3.Dot(power.normalized, avgNormal), 0));
+            rb.AddForce(avgNormal.normalized * power.magnitude * Mathf.Max(Vector3.Dot(power.normalized, avgNormal), 0));
             lastHitTime = 0;
         }
     }
